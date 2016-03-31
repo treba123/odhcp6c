@@ -31,6 +31,7 @@
 
 #include <net/if.h>
 #include <net/ethernet.h>
+#include <arpa/inet.h>
 
 #include "odhcp6c.h"
 #include "md5.h"
@@ -492,12 +493,42 @@ static void dhcpv6_send(enum dhcpv6_msg type, uint8_t trid[3], uint32_t ecs)
 	if (!(client_options & DHCPV6_CLIENT_FQDN))
 		iov[IOV_FQDN].iov_len = 0;
 
-	struct sockaddr_in6 srv = {AF_INET6, htons(DHCPV6_SERVER_PORT),
-		0, ALL_DHCPV6_RELAYS, ifindex};
-	struct msghdr msg = {.msg_name = &srv, .msg_namelen = sizeof(srv),
+    
+    //check for list of unicasts instead of multicast
+    if(vector_count(&ip6_address_list) == 0){
+		
+		//do multicast
+		syslog(LOG_NOTICE, "sending multicast");
+		
+		struct sockaddr_in6 srv = {AF_INET6, htons(DHCPV6_SERVER_PORT),
+			0, ALL_DHCPV6_RELAYS, ifindex};
+			
+		struct msghdr msg = {.msg_name = &srv, .msg_namelen = sizeof(srv),
 			.msg_iov = iov, .msg_iovlen = cnt};
-
-	sendmsg(sock, &msg, 0);
+			
+		sendmsg(sock, &msg, 0);
+	}
+	else{
+		
+		//do multiple unicasts
+		
+		for (int i = 0; i < vector_count(&ip6_address_list); i++) {
+			
+			struct in6_addr * addr = (struct in6_addr *)vector_get(&ip6_address_list, i);
+			
+			char out[INET6_ADDRSTRLEN];
+			inet_ntop(AF_INET6, addr, out, INET6_ADDRSTRLEN);
+			syslog(LOG_NOTICE, "sending unicast to: %s\n", out);
+			
+			struct sockaddr_in6 srv = {AF_INET6, htons(DHCPV6_SERVER_PORT),
+				0, *addr, ifindex};
+			
+			struct msghdr msg = {.msg_name = &srv, .msg_namelen = sizeof(srv),
+				.msg_iov = iov, .msg_iovlen = cnt};
+			
+			sendmsg(sock, &msg, 0);
+        }
+    }
 }
 
 

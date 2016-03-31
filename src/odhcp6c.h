@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <netinet/in.h>
+#include "vector.h"
 
 #define _unused __attribute__((unused))
 #define _packed __attribute__((packed))
@@ -354,3 +355,5 @@ bool odhcp6c_update_entry(enum odhcp6c_state state, struct odhcp6c_entry *new, u
 
 void odhcp6c_expire(void);
 uint32_t odhcp6c_elapsed(void);
+
+vector ip6_address_list;
