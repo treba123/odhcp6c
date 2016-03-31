@@ -30,7 +30,7 @@
 
 #include "odhcp6c.h"
 #include "ra.h"
-
+#include "vector.h"
 
 
 static void sighandler(int signal);
@@ -68,6 +68,8 @@ int main(_unused int argc, char* const argv[])
 	static struct in6_addr ifid = IN6ADDR_ANY_INIT;
 	int sol_timeout = DHCPV6_SOL_MAX_RT;
 	int verbosity = 0;
+	vector ip6_address_list;
+	vector_init(&ip6_address_list);
 
 
 	bool help = false, daemonize = false;
@@ -75,7 +77,7 @@ int main(_unused int argc, char* const argv[])
 	int c;
 	unsigned int client_options = DHCPV6_CLIENT_FQDN | DHCPV6_ACCEPT_RECONFIGURE;
 
-	while ((c = getopt(argc, argv, "S::N:V:P:FB:c:i:r:Ru:s:kt:m:hedp:fav")) != -1) {
+	while ((c = getopt(argc, argv, "S::N:V:P:FB:c:i:r:Ru:s:kt:m:hedp:fav:l:")) != -1) {
 		switch (c) {
 		case 'S':
 			allow_slaac_only = (optarg) ? atoi(optarg) : -1;
@@ -216,12 +218,33 @@ int main(_unused int argc, char* const argv[])
 		case 'v':
 			++verbosity;
 			break;
+			
+		case 'l': ;
+			char delimiter[] = ",";
+			char *ptr = strtok(optarg, delimiter);
+			
+			while(ptr != NULL) {
+				struct in6_addr * addr = malloc(sizeof(struct in6_addr));				
+				inet_pton(AF_INET6, ptr, addr) ? vector_add(&ip6_address_list, addr) : free(addr);
+
+				ptr = strtok(NULL, delimiter);
+			}
+			
+			break;
 
 		default:
 			help = true;
 			break;
 		}
 	}
+	
+	//this is just a check for the -l option - to be removed
+	for (int i = 0; i < vector_count(&ip6_address_list); i++) {
+		char out[INET6_ADDRSTRLEN];
+		inet_ntop(AF_INET6, vector_get(&ip6_address_list, i), out, INET6_ADDRSTRLEN);
+		
+        printf("Vadlid address: %s\n", out);
+    }
 
 	if (allow_slaac_only > 0)
 		script_sync_delay = allow_slaac_only;

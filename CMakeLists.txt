@@ -15,7 +15,7 @@ if(${EXT_CER_ID})
 	add_definitions(-DEXT_CER_ID=${EXT_CER_ID})
 endif(${EXT_CER_ID})
 
-add_executable(odhcp6c src/odhcp6c.c src/dhcpv6.c src/ra.c src/script.c src/md5.c)
+add_executable(odhcp6c src/odhcp6c.c src/dhcpv6.c src/ra.c src/script.c src/md5.c src/vector.c)
 target_link_libraries(odhcp6c resolv)
 
 # Installation
