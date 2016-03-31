@@ -68,6 +68,7 @@ int main(_unused int argc, char* const argv[])
 	static struct in6_addr ifid = IN6ADDR_ANY_INIT;
 	int sol_timeout = DHCPV6_SOL_MAX_RT;
 	int verbosity = 0;
+	static vector ip6_address_list;
 	vector_init(&ip6_address_list);
 
 
@@ -257,7 +258,7 @@ int main(_unused int argc, char* const argv[])
 	signal(SIGUSR2, sighandler);
 
 	if ((urandom_fd = open("/dev/urandom", O_CLOEXEC | O_RDONLY)) < 0 ||
-			init_dhcpv6(ifname, client_options, sol_timeout) ||
+			init_dhcpv6(ifname, client_options, sol_timeout, ip6_address_list) ||
 			ra_init(ifname, &ifid) || script_init(script, ifname)) {
 		syslog(LOG_ERR, "failed to initialize: %s", strerror(errno));
 		return 3;

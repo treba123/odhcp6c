@@ -317,7 +317,7 @@ struct odhcp6c_request_prefix {
 	uint16_t length;
 };
 
-int init_dhcpv6(const char *ifname, unsigned int client_options, int sol_timeout);
+int init_dhcpv6(const char *ifname, unsigned int client_options, int sol_timeout, vector ip6_address_list);
 int dhcpv6_set_ia_mode(enum odhcp6c_ia_mode na, enum odhcp6c_ia_mode pd);
 int dhcpv6_request(enum dhcpv6_msg type);
 int dhcpv6_poll_reconfigure(void);
@@ -355,5 +355,3 @@ bool odhcp6c_update_entry(enum odhcp6c_state state, struct odhcp6c_entry *new, u
 
 void odhcp6c_expire(void);
 uint32_t odhcp6c_elapsed(void);
-
-vector ip6_address_list;

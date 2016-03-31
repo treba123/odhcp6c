@@ -110,6 +110,8 @@ static uint8_t reconf_key[16];
 // client options
 static unsigned int client_options = 0;
 
+// unicast addresses
+static vector ip6_address_list;
 
 static uint32_t ntohl_unaligned(const uint8_t *data)
 {
@@ -119,9 +121,10 @@ static uint32_t ntohl_unaligned(const uint8_t *data)
 	return ntohl(buf);
 }
 
-int init_dhcpv6(const char *ifname, unsigned int options, int sol_timeout)
+int init_dhcpv6(const char *ifname, unsigned int options, int sol_timeout, vector addr_list)
 {
 	client_options = options;
+	ip6_address_list = addr_list;
 	dhcpv6_retx[DHCPV6_MSG_SOLICIT].max_timeo = sol_timeout;
 
 	sock = socket(AF_INET6, SOCK_DGRAM | SOCK_CLOEXEC, IPPROTO_UDP);
