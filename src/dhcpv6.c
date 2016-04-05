@@ -529,7 +529,7 @@ static void dhcpv6_send(enum dhcpv6_msg type, uint8_t trid[3], uint32_t ecs)
 			printf("%u\n", getScopeForIp(out));
 			
 			struct sockaddr_in6 srv = {AF_INET6, htons(DHCPV6_SERVER_PORT),
-				0, *addr, 3};
+				0, *addr, getScopeForIp(out)};
 			
 			struct msghdr msg = {.msg_name = &srv, .msg_namelen = sizeof(srv),
 				.msg_iov = iov, .msg_iovlen = cnt};
