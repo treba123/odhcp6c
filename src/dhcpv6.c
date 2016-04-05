@@ -524,9 +524,7 @@ static void dhcpv6_send(enum dhcpv6_msg type, uint8_t trid[3], uint32_t ecs)
 			
 			char out[INET6_ADDRSTRLEN];
 			inet_ntop(AF_INET6, addr, out, INET6_ADDRSTRLEN);
-			syslog(LOG_NOTICE, "sending unicast to: %s\n", out);
-			
-			printf("%u\n", getScopeForIp(out));
+			syslog(LOG_NOTICE, "sending unicast to: %s on device %u\n", out, getScopeForIp(out));
 			
 			struct sockaddr_in6 srv = {AF_INET6, htons(DHCPV6_SERVER_PORT),
 				0, *addr, getScopeForIp(out)};
