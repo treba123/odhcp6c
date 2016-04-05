@@ -33,6 +33,9 @@
 #include <net/ethernet.h>
 #include <arpa/inet.h>
 
+#include <ifaddrs.h> // getifaddrs()
+#include <netdb.h> // NI_ constants
+
 #include "odhcp6c.h"
 #include "md5.h"
 
@@ -72,7 +75,7 @@ static reply_handler dhcpv6_handle_advert;
 static reply_handler dhcpv6_handle_rebind_reply;
 static reply_handler dhcpv6_handle_reconfigure;
 static int dhcpv6_commit_advert(void);
-
+unsigned getScopeForIp(const char *ip);
 
 
 // RFC 3315 - 5.5 Timeout and Delay values
@@ -523,8 +526,10 @@ static void dhcpv6_send(enum dhcpv6_msg type, uint8_t trid[3], uint32_t ecs)
 			inet_ntop(AF_INET6, addr, out, INET6_ADDRSTRLEN);
 			syslog(LOG_NOTICE, "sending unicast to: %s\n", out);
 			
+			printf("%u\n", getScopeForIp(out));
+			
 			struct sockaddr_in6 srv = {AF_INET6, htons(DHCPV6_SERVER_PORT),
-				0, *addr, ifindex};
+				0, *addr, 3};
 			
 			struct msghdr msg = {.msg_name = &srv, .msg_namelen = sizeof(srv),
 				.msg_iov = iov, .msg_iovlen = cnt};
@@ -534,6 +539,32 @@ static void dhcpv6_send(enum dhcpv6_msg type, uint8_t trid[3], uint32_t ecs)
     }
 }
 
+unsigned getScopeForIp(const char *ip){
+    struct ifaddrs *addrs;
+    char ipAddress[NI_MAXHOST];
+    unsigned scope=0;
+    // walk over the list of all interface addresses
+    getifaddrs(&addrs);
+    for(struct ifaddrs *addr=addrs;addr;addr=addr->ifa_next){
+        if (addr->ifa_addr && addr->ifa_addr->sa_family==AF_INET6){ // only interested in ipv6 ones
+            getnameinfo(addr->ifa_addr,sizeof(struct sockaddr_in6),ipAddress,sizeof(ipAddress),NULL,0,NI_NUMERICHOST);
+            // result actually contains the interface name, so strip it
+            for(int i=0;ipAddress[i];i++){
+                if(ipAddress[i]=='%'){
+                    ipAddress[i]='\0';
+                    break;
+                }
+            }
+            // if the ip matches, convert the interface name to a scope index
+            if(strcmp(ipAddress,ip)==0){
+                scope=if_nametoindex(addr->ifa_name);
+                break;
+            }
+        }
+    }
+    freeifaddrs(addrs);
+    return scope;
+}
 
 static int64_t dhcpv6_rand_delay(int64_t time)
 {
