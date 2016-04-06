@@ -204,7 +204,7 @@ int init_dhcpv6(const char *ifname, unsigned int options, int sol_timeout, vecto
 	setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &val, sizeof(val));
 	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
 	setsockopt(sock, IPPROTO_IPV6, IPV6_RECVPKTINFO, &val, sizeof(val));
-	setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, ifname, strlen(ifname));
+	//setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, ifname, strlen(ifname));
 
 	struct sockaddr_in6 client_addr = { .sin6_family = AF_INET6,
 		.sin6_port = htons(DHCPV6_CLIENT_PORT), .sin6_flowinfo = 0 };
@@ -524,10 +524,10 @@ static void dhcpv6_send(enum dhcpv6_msg type, uint8_t trid[3], uint32_t ecs)
 			
 			char out[INET6_ADDRSTRLEN];
 			inet_ntop(AF_INET6, addr, out, INET6_ADDRSTRLEN);
-			syslog(LOG_NOTICE, "sending unicast to: %s on device %u\n", out, getScopeForIp(out));
+			syslog(LOG_NOTICE, "sending unicast to: %s", out);
 			
 			struct sockaddr_in6 srv = {AF_INET6, htons(DHCPV6_SERVER_PORT),
-				0, *addr, getScopeForIp(out)};
+				0, *addr, 0};
 			
 			struct msghdr msg = {.msg_name = &srv, .msg_namelen = sizeof(srv),
 				.msg_iov = iov, .msg_iovlen = cnt};
@@ -535,33 +535,6 @@ static void dhcpv6_send(enum dhcpv6_msg type, uint8_t trid[3], uint32_t ecs)
 			sendmsg(sock, &msg, 0);
         }
     }
-}
-
-unsigned getScopeForIp(const char *ip){
-    struct ifaddrs *addrs;
-    char ipAddress[NI_MAXHOST];
-    unsigned scope=0;
-    // walk over the list of all interface addresses
-    getifaddrs(&addrs);
-    for(struct ifaddrs *addr=addrs;addr;addr=addr->ifa_next){
-        if (addr->ifa_addr && addr->ifa_addr->sa_family==AF_INET6){ // only interested in ipv6 ones
-            getnameinfo(addr->ifa_addr,sizeof(struct sockaddr_in6),ipAddress,sizeof(ipAddress),NULL,0,NI_NUMERICHOST);
-            // result actually contains the interface name, so strip it
-            for(int i=0;ipAddress[i];i++){
-                if(ipAddress[i]=='%'){
-                    ipAddress[i]='\0';
-                    break;
-                }
-            }
-            // if the ip matches, convert the interface name to a scope index
-            if(strcmp(ipAddress,ip)==0){
-                scope=if_nametoindex(addr->ifa_name);
-                break;
-            }
-        }
-    }
-    freeifaddrs(addrs);
-    return scope;
 }
 
 static int64_t dhcpv6_rand_delay(int64_t time)
